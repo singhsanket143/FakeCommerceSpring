@@ -1,12 +1,17 @@
 package com.example.FakeCommerce.services;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.example.FakeCommerce.adapters.OrderAdapter;
 import com.example.FakeCommerce.dtos.CreateOrderRequestDTO;
 import com.example.FakeCommerce.dtos.GetOrderResponseDto;
+import com.example.FakeCommerce.dtos.UpdateOrderRequestDto;
 import com.example.FakeCommerce.exceptions.ResourceNotFoundException;
 import com.example.FakeCommerce.repositories.OrderRespository;
 import com.example.FakeCommerce.repositories.OrderproductsRepository;
@@ -16,6 +21,7 @@ import com.example.FakeCommerce.schema.OrderProducts;
 import com.example.FakeCommerce.schema.OrderStatus;
 import com.example.FakeCommerce.schema.Product;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -50,7 +56,8 @@ public class OrderService {
     }
 
 
-    public void createOrder(CreateOrderRequestDTO createOrderRequestDTO) {
+    @Transactional
+    public GetOrderResponseDto createOrder(CreateOrderRequestDTO createOrderRequestDTO) {
         Order order = Order.builder()
                         .status(OrderStatus.PENDING)
                         .build();
@@ -58,22 +65,56 @@ public class OrderService {
         orderRespository.save(order);
 
         if(createOrderRequestDTO.getOrderItems() != null) {
+            List<Long> productIds = createOrderRequestDTO.getOrderItems().stream().map(item -> item.getProductId()).collect(Collectors.toList());
+
+            List<Product> products =productRepository.findAllById(productIds);
+
+            Map<Long, Product> productMap = products.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+
+            for(Long id : productIds) {
+                if(!productMap.containsKey(id)) {
+                    throw new ResourceNotFoundException("Product not found with id: " + id);
+                }
+            }
+
+
+            List<OrderProducts> orderProducts = new ArrayList<>();
+
             for(var itemDto : createOrderRequestDTO.getOrderItems()) {
-                Product product = productRepository.findById(itemDto.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemDto.getProductId()));
+                Product product = productMap.get(itemDto.getProductId());
 
+                orderProducts.add(OrderProducts.builder()
+                                                .order(order)
+                                                .product(product)
+                                                .quantity(itemDto.getQuantity() != null ? itemDto.getQuantity() : 1)
+                                                .build());
+                                                
+            }
 
-                OrderProducts orderProduct = OrderProducts.builder()
-                    .order(order)
-                    .product(product)
-                    .quantity(itemDto.getQuantity() != null ? itemDto.getQuantity() : 1)
-                    .build();
+            orderproductsRepository.saveAll(orderProducts);
+        }
 
-                orderproductsRepository.save(orderProduct);
-                
+        return orderAdapter.mapToGetOrderResponseDto(order);
+    }
+
+    public GetOrderResponseDto updateOrder(Long id, UpdateOrderRequestDto updateOrderRequestDto) {
+        Order order = orderRespository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        
+        if(updateOrderRequestDto.getStatus() != null) {
+            order.setStatus(updateOrderRequestDto.getStatus());
+            orderRespository.save(order);
+        }
+
+        if(updateOrderRequestDto.getOrderItems() != null) {
+            for(var itemDto : updateOrderRequestDto.getOrderItems()) {
+
+                // process each item ---> N+1 queries: TODO
             }
         }
 
+        return orderAdapter.mapToGetOrderResponseDto(order);
 
     }
 }
