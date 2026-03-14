@@ -43,3 +43,6 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.named('bootRun') {
+    jvmArgs = ['-javaagent:newrelic/newrelic.jar']
+}

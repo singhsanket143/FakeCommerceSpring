@@ -69,7 +69,7 @@ public class OrderService {
         if(createOrderRequestDTO.getOrderItems() != null) {
             List<Long> productIds = createOrderRequestDTO.getOrderItems().stream().map(item -> item.getProductId()).collect(Collectors.toList());
 
-            List<Product> products =productRepository.findAllById(productIds);
+            List<Product> products = productRepository.findAllById(productIds);
 
             Map<Long, Product> productMap = products.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
 
@@ -194,7 +194,7 @@ public class OrderService {
 
         return orderAdapter.mapToGetOrderResponseDto(order);
 
-    }
+    } // TODO: Add controller for create and update order and test the api
 }
 
 
