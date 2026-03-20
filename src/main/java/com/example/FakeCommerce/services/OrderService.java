@@ -27,7 +27,9 @@ import com.example.FakeCommerce.schema.Product;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -77,6 +79,7 @@ public class OrderService {
 
             for(Long id : productIds) {
                 if(!productMap.containsKey(id)) {
+                    log.error("Product not found with id: " + id);
                     throw new ResourceNotFoundException("Product not found with id: " + id);
                 }
             }

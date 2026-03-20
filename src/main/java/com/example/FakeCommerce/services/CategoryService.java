@@ -10,7 +10,9 @@ import com.example.FakeCommerce.repositories.CategoryRepository;
 import com.example.FakeCommerce.schema.Category;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
@@ -38,6 +40,7 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
         categoryRepository.delete(category);
+        log.info("Category with id {} deleted successfully", id);
     }
     
 }
