@@ -1,6 +1,13 @@
 version: '3.8'
 
 services:
+  grafana-lgtm:
+    image: 'grafana/otel-lgtm:latest'
+    ports:
+      - 3000:3000
+      - 9090:9090
+      - 4317:4317
+      - 4318:4318
   elasticsearch:
     image: elasticsearch:8.17.1 
     container_name: elasticsearch
